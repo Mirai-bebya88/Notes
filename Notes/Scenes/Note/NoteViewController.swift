@@ -12,15 +12,7 @@ class NoteViewController: UIViewController {
     @IBOutlet weak var collectionView: UICollectionView!
     
     private let searchController = UISearchController(searchResultsController: nil)
-    private var filteredNotes: [Note] = []
-    
-    private var isSearching: Bool {
-           searchController.isActive && !(searchController.searchBar.text?.isEmpty ?? true)
-       }
-       
-       private var notes: [Note] {
-           isSearching ? filteredNotes : NotesDataSource.shared.notesData
-       }
+    private var viewModel: NotesViewModelProtocol = NotesViewModel()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -28,12 +20,13 @@ class NoteViewController: UIViewController {
         setUpNavigation()
         setUpCollectionView()
         setUpNavigationBarItem()
+        bindViewModel()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        collectionView.reloadData()
+        viewModel.loadNotes()
     }
     
     func setUpCollectionView() {
@@ -60,12 +53,10 @@ class NoteViewController: UIViewController {
         navigationController?.pushViewController(vc, animated: true)
     }
     
-    func filterNotes(with searchText: String) {
-            filteredNotes = NotesDataSource.shared.notesData.filter { note in
-                note.name.lowercased().contains(searchText.lowercased()) ||
-                note.content.lowercased().contains(searchText.lowercased())
+    func bindViewModel() {
+            viewModel.refreshUI = {
+                self.collectionView.reloadData()
             }
-            collectionView.reloadData()
         }
 }
 
@@ -78,7 +69,7 @@ extension NoteViewController {
 
 extension NoteViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        notes.count
+        viewModel.notes.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -86,7 +77,7 @@ extension NoteViewController: UICollectionViewDataSource {
             withReuseIdentifier: "NoteCollectionViewCell",
             for: indexPath
         ) as! NoteCollectionViewCell
-        cell.configure(with: notes[indexPath.row])
+        cell.configure(with: viewModel.notes[indexPath.row])
         return cell
     }
 }
@@ -98,10 +89,8 @@ extension NoteViewController: UICollectionViewDelegate {
             bundle: nil
         ).instantiateViewController(withIdentifier: "NoteDetailsViewController") as! NoteDetailsViewController
         
-        let selectedNote = notes[indexPath.row]
-                vc.indexOfNote = NotesDataSource.shared.notesData.firstIndex(where: {
-                    $0.name == selectedNote.name && $0.content == selectedNote.content
-                })
+        let selectedNote = viewModel.notes[indexPath.row]
+               vc.indexOfNote = viewModel.getOriginalIndex(for: selectedNote)
         
         navigationController?.pushViewController(vc, animated: true)
     }
@@ -136,10 +125,6 @@ extension NoteViewController: UICollectionViewDelegateFlowLayout {
 
 extension NoteViewController: UISearchResultsUpdating {
     func updateSearchResults(for searchController: UISearchController) {
-        guard let text = searchController.searchBar.text, !text.isEmpty else {
-            collectionView.reloadData()
-            return
-        }
-        filterNotes(with: text)
+        viewModel.filterNotes(with: searchController.searchBar.text ?? "")
     }
 }
