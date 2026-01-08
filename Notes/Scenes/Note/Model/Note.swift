@@ -5,7 +5,7 @@
 //  Created by elene malakmadze on 27.11.25.
 //
 
-struct Note {
+struct Note: Codable  {
     let name: String
     let content: String
 }

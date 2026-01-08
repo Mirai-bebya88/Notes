@@ -17,12 +17,11 @@ class NoteDetailsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        if (indexOfNote != nil) {
-            let note = NotesDataSource.shared.notesData[indexOfNote ?? 0]
-
-            name.text = note.name
-            content.text = note.content
-        }
+        if let index = indexOfNote {
+                let note = NotesDataSource.shared.notesData[index]
+                name.text = note.name
+                content.text = note.content
+            }
         
         setUpNavigationBarItem()
     }
@@ -39,11 +38,11 @@ class NoteDetailsViewController: UIViewController {
     @objc func handleSaveButtonTapped() {
         let newNote = Note(name: name.text ?? "", content: content.text ?? "")
         
-        if (indexOfNote != nil) {
-            NotesDataSource.shared.notesData[indexOfNote ?? 0] = newNote
-        } else {
-            NotesDataSource.shared.notesData.append(newNote)
-        }
+        if let index = indexOfNote {
+                NotesDataSource.shared.notesData[index] = newNote
+            } else {
+                NotesDataSource.shared.notesData.append(newNote)
+            }
         
         navigationController?.popViewController(animated: true)
     }
